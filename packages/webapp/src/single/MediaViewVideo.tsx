@@ -115,6 +115,14 @@ export const MediaViewVideo = (props) => {
       video.volume = volume
       video.muted = muted
       video.playbackRate = playbackRate
+      // Auto-start video playback
+      video.play().then(() => {
+        setIsPlaying(true)
+        dispatch({type: 'play'})
+      }).catch((error) => {
+        // Autoplay might be blocked by browser policy, user will need to manually start
+        console.log('Autoplay prevented:', error)
+      })
     }
 
     video.addEventListener('loadedmetadata', onLoadedMetadata)
@@ -124,6 +132,14 @@ export const MediaViewVideo = (props) => {
       video.volume = volume
       video.muted = muted
       video.playbackRate = playbackRate
+      // Auto-start video playback for already loaded video
+      video.play().then(() => {
+        setIsPlaying(true)
+        dispatch({type: 'play'})
+      }).catch((error) => {
+        // Autoplay might be blocked by browser policy, user will need to manually start
+        console.log('Autoplay prevented:', error)
+      })
     }
 
     return () => {
