@@ -150,7 +150,7 @@ export const MediaView = () => {
       search({type: 'none'});
       navigate('/');
     } else if (type == 'play') {
-      setHideNavigation(true);
+      setHideNavigation(false);
     } else if (type == 'pause') {
       setHideNavigation(false);
     } else if (type == 'search') {
