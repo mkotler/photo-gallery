@@ -5,6 +5,7 @@ import * as icons from '@fortawesome/free-solid-svg-icons'
 
 import { useEventStore } from '../store/event-store'
 import { useEntryStore } from '../store/entry-store'
+import { useEditTagStore } from '../store/edit-tags-store'
 import { TagInput } from "../dialog/tag-input";
 import { Tag } from "../api/models";
 import { RecentTags } from "../dialog/recent-tags";
@@ -45,17 +46,24 @@ export const EditMediaTags = ({entry, dispatch}) => {
   const [autoSaveError, setAutoSaveError] = useState<string | null>(null)
   const recentTags = useEventStore(state => state.recentTags);
   const allTags = useAllTags();
+    // Edit tag settings
+  const autoAdvanceAfterTag = useEditTagStore(state => state.autoAdvanceAfterTag)
+  const setAutoAdvanceAfterTag = useEditTagStore(state => state.setAutoAdvanceAfterTag)
 
   useEffect(() => {
     dialogDispatch({type: 'setAllTags', value: allTags.map(tag => tag.name).sort()})
   }, [allTags])
-
   // Auto-save function for immediate tag operations
   const autoSaveTag = async (tagName: string, remove: boolean) => {
     try {
       setAutoSaveError(null)
       const tagActions = [{name: tagName, remove}]
       await addTags([entry.id], tagActions)
+      
+      // Auto-advance to next media if enabled and this was a tag addition (not removal)
+      if (!remove && autoAdvanceAfterTag) {
+        dispatch({type: 'next'})
+      }
     } catch (error) {
       console.error('Auto-save failed:', error)
       setAutoSaveError(`Failed to ${remove ? 'remove' : 'add'} tag "${tagName}". Please try again.`)
@@ -170,9 +178,21 @@ export const EditMediaTags = ({entry, dispatch}) => {
               value={state.inputValue}
               autoFocus={false}
               tabIndex={1}
-            />
-            <RecentTags tags={recentTags} dispatch={autoSaveDispatch} />
+            />            <RecentTags tags={recentTags} dispatch={autoSaveDispatch} />
             <UsedTags title="Most used tags:" tags={allTags} initialCount={5} dispatch={autoSaveDispatch} />
+              {/* Quick tag edit section */}
+            <div className="flex flex-col gap-2">
+              <p className="text-gray-500">Quick tag edit:</p>              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoAdvanceAfterTag}
+                  onChange={(e) => setAutoAdvanceAfterTag(e.target.checked)}
+                  className="w-4 h-4 text-gray-400 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-gray-400">Advance media after adding tag</span>
+              </label>
+            </div>
+            
             {autoSaveError && (
               <div className="flex items-center justify-between p-3 text-red-200 bg-red-900/50 border border-red-800 rounded">
                 <span className="text-sm">{autoSaveError}</span>

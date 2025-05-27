@@ -77,6 +77,44 @@ This document outlines the implementation of a quick tagging feature for the pho
 - **Keyboard Shortcuts**: Number keys for frequently used tags, custom hotkeys
 - **Tag Categories**: Grouped tag organization, quick access to tag sets
 
+### Phase 5: ✅ COMPLETED - Auto-Advance Option
+**Objective**: Add option to automatically advance to next media after adding a tag for faster bulk tagging workflows
+
+**Enhancement Description**:
+- **Location**: Edit Media Tags taskpane (EditMediaTags.tsx)
+- **New Section**: Add "Quick tag edit:" section below "Most used tags:" area
+- **Control**: Add checkbox labeled "Advance media after adding tag" (defaults to unchecked)
+- **Behavior**: 
+  - When checkbox is checked: After a tag is successfully added and auto-saved, automatically navigate to the next media item
+  - When checkbox is unchecked: Maintain current behavior (stay on same media after adding tag)
+  - Setting should be remembered across sessions using localStorage or store persistence
+- **Scope**: Only applies to tag additions, not tag removals
+- **Use Case**: Enables rapid bulk tagging workflow where users want to add the same tag to multiple consecutive media items
+
+**Technical Implementation Requirements**:
+- Add checkbox state management to EditMediaTags component
+- Persist checkbox state using existing store pattern or localStorage
+- Hook into existing auto-save success flow to trigger navigation
+- Use existing dispatch({type: 'next'}) action for media advancement
+- Only advance on successful tag additions (not removals or failures)
+- Ensure checkbox state persists when switching between different media items
+- Position checkbox in new "Quick tag edit:" section for clear visual separation
+
+**Benefits**:
+- Significantly faster bulk tagging workflows
+- Maintains current behavior as default (checkbox unchecked)
+- User has full control over when to use auto-advance feature
+- Reduces repetitive navigation clicks during bulk tagging sessions
+
+**Technical Implementation Completed**:
+- ✅ Created quick-tag-store.ts with persistent autoAdvanceAfterTag setting
+- ✅ Added checkbox in new "Quick tag edit:" section below "Most used tags:"
+- ✅ Integrated auto-advance functionality into autoSaveTag function
+- ✅ Only advances on successful tag additions (not removals or failures)
+- ✅ Setting persists across sessions using Zustand persist middleware
+- ✅ Checkbox state maintained when switching between media items
+- ✅ Clear visual separation with border and section heading
+
 ## Implementation Phases - Detailed Specifications
 
 ### Phase 1: ✅ COMPLETED - Add Quick Tagging Toggle
@@ -153,12 +191,13 @@ This document outlines the implementation of a quick tagging feature for the pho
 
 ### New Files
 - ✅ `packages/webapp/src/single/EditMediaTags.tsx` (Phase 2 - Completed)
+- ✅ `packages/webapp/src/store/quick-tag-store.ts` (Phase 5 - Completed)
 
 ### Modified Files
 - ✅ `packages/webapp/src/single/MediaView.tsx` (Phase 1, 2, 3 - Completed)
 - ✅ `packages/webapp/src/single/MediaNav.tsx` (Phase 1 - Completed)
 - ✅ `packages/webapp/src/store/single-view-store.ts` (Phase 1 - Completed)
-- ✅ `packages/webapp/src/single/EditMediaTags.tsx` (Phases 2, 4 - Completed)
+- ✅ `packages/webapp/src/single/EditMediaTags.tsx` (Phases 2, 4, 5 - Completed)
 
 ## Dependencies
 
