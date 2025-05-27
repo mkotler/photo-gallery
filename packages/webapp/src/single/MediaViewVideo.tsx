@@ -5,22 +5,29 @@ import Hammer from 'hammerjs'
 import { getHigherPreviewUrl } from '../utils/preview'
 import { usePreviewSize } from "./usePreviewSize";
 import { classNames } from "../utils/class-names";
+import { useVideoSettingsStore } from "../store/view-video-store";
 
 export const MediaViewVideo = (props) => {
   const { media, dispatch } = props
   const { previews } = media;
   const [isPlaying, setIsPlaying] = useState(false)
-  const ref = useRef()
-  const gestureOverlay = useRef()
+  const ref = useRef<HTMLVideoElement>(null)
+  const gestureOverlay = useRef<HTMLDivElement>(null)
   const previewSize = usePreviewSize()
   const posterUrl = getHigherPreviewUrl(previews, previewSize) || ''
+  // Video settings store for persistent volume and muted state
+  const volume = useVideoSettingsStore(state => state.volume)
+  const muted = useVideoSettingsStore(state => state.muted)
+  const playbackRate = useVideoSettingsStore(state => state.playbackRate)
+  const setVolume = useVideoSettingsStore(state => state.setVolume)
+  const setMuted = useVideoSettingsStore(state => state.setMuted)
+  const setPlaybackRate = useVideoSettingsStore(state => state.setPlaybackRate)
 
   const videoPreview = previews.filter(p => p.match(/video-preview/)).shift()
   const videoUrl = videoPreview ? `files/${videoPreview}` : ''
   const videoMime = videoPreview ? `video/${videoPreview.substring(videoPreview.lastIndexOf('.') + 1).toLowerCase()}` : 'video/mp4'
-
   useEffect(() => {
-    const e: HTMLElement = ref.current;
+    const e: HTMLVideoElement | null = ref.current;
     if (!e) {
       return
     }
@@ -32,20 +39,32 @@ export const MediaViewVideo = (props) => {
     const onPlay = () => {
       setIsPlaying(true)
       dispatch({type: 'play'})
+    }    // Save volume and muted state when they change
+    const onVolumeChange = () => {
+      setVolume(e.volume)
+      setMuted(e.muted)
+    }
+
+    // Save playback rate when it changes
+    const onRateChange = () => {
+      setPlaybackRate(e.playbackRate)
     }
 
     e.addEventListener('pause', onPause)
     e.addEventListener('play', onPlay)
+    e.addEventListener('volumechange', onVolumeChange)
+    e.addEventListener('ratechange', onRateChange)
 
     return () => {
       e.removeEventListener('pause', onPause)
       e.removeEventListener('play', onPlay)
+      e.removeEventListener('volumechange', onVolumeChange)
+      e.removeEventListener('ratechange', onRateChange)
     }
-  }, [ref])
-
+  }, [ref, setVolume, setMuted, setPlaybackRate])
   useEffect(() => {
-    const video: HTMLMediaElement = ref.current;
-    const overlay: HTMLMediaElement = gestureOverlay.current;
+    const video: HTMLVideoElement | null = ref.current;
+    const overlay: HTMLDivElement | null = gestureOverlay.current;
 
     if (!overlay || !video) {
       return
@@ -85,8 +104,32 @@ export const MediaViewVideo = (props) => {
     return () => {
       mc.stop(false)
       mc.destroy()
+    }  }, [ref, gestureOverlay])
+
+  // Restore video settings when video loads
+  useEffect(() => {
+    const video: HTMLVideoElement | null = ref.current;
+    if (!video) {
+      return
+    }    const onLoadedMetadata = () => {
+      video.volume = volume
+      video.muted = muted
+      video.playbackRate = playbackRate
     }
-  }, [ref, gestureOverlay])
+
+    video.addEventListener('loadedmetadata', onLoadedMetadata)
+
+    // Set initial values if video is already loaded
+    if (video.readyState >= 1) { // HAVE_METADATA
+      video.volume = volume
+      video.muted = muted
+      video.playbackRate = playbackRate
+    }
+
+    return () => {
+      video.removeEventListener('loadedmetadata', onLoadedMetadata)
+    }
+  }, [volume, muted, playbackRate, videoUrl]) // Include videoUrl to re-run when video changes
 
   return (
     <>
