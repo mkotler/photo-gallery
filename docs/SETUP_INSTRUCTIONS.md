@@ -51,3 +51,4 @@ It appears that the error is within exiftool-vendored.
 cd packages/webapp
 npm run dev
 ```
+- if getting error that index.html doesn't exist then it is possible the postbuild step didn't run properly for the server, try running `cd packages/server && npm run postbuild`
