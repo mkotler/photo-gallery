@@ -40,9 +40,13 @@ export interface TagInputProps {
   suggestions: TagSuggestion[]
   showSuggestions: boolean
   dispatch: Function
+  autoFocus?: boolean
+  onSubmit?: Function
+  onCancel?: Function
+  tabIndex?: number
 }
 
-export const TagInput : FunctionComponent<TagInputProps> = ({value, tags, withRemove: withRemove, suggestions, showSuggestions, dispatch, onSubmit, onCancel}) => {
+export const TagInput : FunctionComponent<TagInputProps> = ({value, tags, withRemove: withRemove, suggestions, showSuggestions, dispatch, autoFocus = true, onSubmit, onCancel, tabIndex}) => {
   const ref = useRef<HTMLElement>(null)
 
   const handleKeyDown = (ev: KeyboardEvent<HTMLInputElement>) => {
@@ -58,7 +62,7 @@ export const TagInput : FunctionComponent<TagInputProps> = ({value, tags, withRe
         ev.preventDefault()
         return dispatch({type: 'addTag', value})
       }
-      onSubmit(ev);
+      onSubmit && onSubmit(ev);
     } else if (ev.key == 'Backspace' && value.length == 0) {
       return dispatch({type: 'removeLastTag'})
     } else if (ev.key == 'Escape') {
@@ -67,7 +71,7 @@ export const TagInput : FunctionComponent<TagInputProps> = ({value, tags, withRe
         return dispatch({type: 'clearSuggentions'})
       }
       else {
-        onCancel();
+        onCancel && onCancel();
       }
     } else if (ev.key == 'ArrowDown') {
       ev.preventDefault()
@@ -99,7 +103,7 @@ export const TagInput : FunctionComponent<TagInputProps> = ({value, tags, withRe
       <div className="relative">
         <div ref={ref} className="flex flex-row flex-wrap items-center justify-start w-full gap-2 px-2 py-1 bg-gray-800 border rounded border-bg-gray-700">
           <TagList tags={tags} withRemove={withRemove} dispatch={dispatch} />
-          <input className="flex-1 py-1 text-gray-300 bg-transparent border-0 focus:border-transparent focus:ring-0 focus:outline-none" id="tags" ref={input => input && input.focus()} value={value} placeholder='Create or add tag' onKeyDown={handleKeyDown} onChange={handleChange}/>
+          <input className="flex-1 py-1 text-gray-300 bg-transparent border-0 focus:border-transparent focus:ring-0 focus:outline-none" id="tags" ref={input => input && autoFocus && input.focus()} value={value} placeholder='Create or add tag' onKeyDown={handleKeyDown} onChange={handleChange} tabIndex={tabIndex}/>
         </div>
         { showSuggestions &&
           <SuggestionList suggestions={suggestions} dispatch={dispatch} input={ref} />

@@ -18,6 +18,7 @@ import { MediaViewUnknownType } from './MediaViewUnknownType';
 import { MediaViewImage } from './MediaViewImage';
 import { MediaViewVideo } from './MediaViewVideo';
 import { Details } from './Details';
+import { EditMediaTags } from './EditMediaTags';
 import { Zoomable } from "./Zoomable";
 import useBodyDimensions from "../utils/useBodyDimensions";
 import { classNames } from '../utils/class-names'
@@ -65,6 +66,7 @@ const hotkeysToAction = {
   's': 'similar',
   'c': 'chronology',
   't': 'toggleNavigation',
+  'q': 'toggleQuickTagging',
   'm': 'map'
 }
 
@@ -74,18 +76,19 @@ export const MediaView = () => {
   const navigate = useNavigate();
   const listLocation = useListLocation();
   const dimensions = useBodyDimensions();
-
   const entries = useEntryStore(state => state.entries);
   const lastIndex = useSingleViewStore(state => state.lastIndex);
   const showDetails = useSingleViewStore(state => state.showDetails);
   const showAnnotations = useSingleViewStore(state => state.showAnnotations);
   const showNavigation = useSingleViewStore(state => state.showNavigation);
+  const showQuickTagging = useSingleViewStore(state => state.showQuickTagging);
   const setLastId = useSingleViewStore(state => state.setLastId);
   const setLastIndex = useSingleViewStore(state => state.setLastIndex);
   const search = useSearchStore(state => state.search);
   const setShowDetails = useSingleViewStore(actions => actions.setShowDetails);
   const setShowAnnotations = useSingleViewStore(actions => actions.setShowAnnotations);
   const setShowNavigation = useSingleViewStore(actions => actions.setShowNavigation);
+  const setShowQuickTagging = useSingleViewStore(actions => actions.setShowQuickTagging);
 
   const [hideNavigation, setHideNavigation] = useState(false)
 
@@ -123,13 +126,20 @@ export const MediaView = () => {
       const i = Math.min(entries.length - 1, Math.max(0, index + (negate * offset)))
       viewEntry(i)
     } else if (type === 'similar' && current?.similarityHash) {
-      navigate(`/similar/${current.shortId}`);
-    } else if (type === 'toggleDetails') {
+      navigate(`/similar/${current.shortId}`);    } else if (type === 'toggleDetails') {
       setShowDetails(!showDetails);
+      if (!showDetails) {
+        setShowQuickTagging(false); // Hide EditMediaTags when showing Details
+      }
     } else if (type === 'toggleAnnotations') {
       setShowAnnotations(!showAnnotations);
     } else if (type === 'toggleNavigation') {
       setShowNavigation(!showNavigation);
+    } else if (type === 'toggleQuickTagging') {
+      setShowQuickTagging(!showQuickTagging);
+      if (!showQuickTagging) {
+        setShowDetails(false); // Hide Details when showing EditMediaTags
+      }
     } else if (type == 'first' && entries.length) {
       viewEntry(0)
     } else if (type == 'last' && entries.length) {
@@ -171,7 +181,7 @@ export const MediaView = () => {
     if (found) {
       ev.preventDefault()
     }
-  }, [index, showDetails, showAnnotations, showNavigation])
+  }, [index, showDetails, showAnnotations, showNavigation, showQuickTagging])
 
   const mediaVanishes = index < 0 && lastIndex >= 0 && entries.length > 0
   if (mediaVanishes) {
@@ -185,13 +195,11 @@ export const MediaView = () => {
   console.log('Media object', current, showDetails);
 
   return (
-    <>
-      <SingleTagDialogProvider>
+    <>      <SingleTagDialogProvider>
         <div className="flex flex-col w-screen md:flex-row h-dvh">
-          <div className={classNames('w-full', {'h-1/2 flex-shrink-0 md:flex-shrink md:h-full': showDetails, 'h-full': !showDetails})}>
-            <div className="relative w-full h-full overflow-hidden">
-              {!hideNavigation && showNavigation &&
-                <MediaNav index={index} current={current} prev={prev} next={next} listLocation={listLocation} showNavigation={showNavigation} dispatch={dispatch} />
+          <div className={classNames('w-full', {'h-1/2 flex-shrink-0 md:flex-shrink md:h-full': showDetails || showQuickTagging, 'h-full': !showDetails && !showQuickTagging})}>
+            <div className="relative w-full h-full overflow-hidden">              {!hideNavigation && showNavigation &&
+                <MediaNav current={current} prev={prev} next={next} listLocation={listLocation} showNavigation={showNavigation} dispatch={dispatch} />
               }
               {isImage &&
                 <Zoomable key={key} childWidth={current.width} childHeight={current.height} onSwipe={onSwipe}>
@@ -205,10 +213,14 @@ export const MediaView = () => {
                 <MediaViewUnknownType key={key} media={current} next={next} prev={prev}/>
               }
             </div>
-          </div>
-          { showDetails &&
-            <div className="md:w-90">
+          </div>          { showDetails &&
+            <div className="md:w-90 min-w-96">
               <Details entry={current} dispatch={dispatch} />
+            </div>
+          }
+          { showQuickTagging &&
+            <div className="md:w-90 min-w-96">
+              <EditMediaTags entry={current} dispatch={dispatch} />
             </div>
           }
         </div>
